@@ -20,7 +20,8 @@ func sendMessage(connection *amqp.Connection) {
 	defer channel.Close()
 
 	// We create an exahange that will bind to the queue to send and receive messages
-	err = channel.ExchangeDeclare("events", "topic", true, false, false, false, nil)
+	// see this for kind of type https://medium.com/faun/different-types-of-rabbitmq-exchanges-9fefd740505d
+	err = channel.ExchangeDeclare("events2", "topic", true, false, false, false, nil)
 
 	if err != nil {
 		panic(err)
@@ -31,11 +32,11 @@ func sendMessage(connection *amqp.Connection) {
 
 	loop, index := true, 1
 	for loop {
-		<-time.Tick(time.Second)
+
 		select {
 		case <-ctx.Done():
 			loop = false
-		default:
+		case <-time.After(time.Second):
 			// We create a message to be sent to the queue.
 			// It has to be an instance of the aqmp publishing struct
 			log.Println("send Message ", fmt.Sprintf("Hello World %d", index))
@@ -44,7 +45,7 @@ func sendMessage(connection *amqp.Connection) {
 			}
 
 			// We publish the message to the exahange we created earlier
-			err = channel.Publish("events", "random-key", false, false, message)
+			err = channel.Publish("events2", "random-key", false, false, message)
 
 			if err != nil {
 				panic("error publishing a message to the queue:" + err.Error())
@@ -66,7 +67,8 @@ func receiveMessage(connection *amqp.Connection) {
 	defer channel.Close()
 
 	// We create an exahange that will bind to the queue to send and receive messages
-	err = channel.ExchangeDeclare("events", "topic", true, false, false, false, nil)
+	// see this for kind of type https://medium.com/faun/different-types-of-rabbitmq-exchanges-9fefd740505d
+	err = channel.ExchangeDeclare("events2", "topic", true, false, false, false, nil)
 
 	if err != nil {
 		panic(err)
@@ -79,7 +81,8 @@ func receiveMessage(connection *amqp.Connection) {
 	}
 
 	// We bind the queue to the exchange to send and receive data from the queue
-	err = channel.QueueBind("test", "#", "events", false, nil)
+	//with any routing key #
+	err = channel.QueueBind("test", "#", "events2", false, nil)
 
 	if err != nil {
 		panic("error binding to the queue: " + err.Error())
