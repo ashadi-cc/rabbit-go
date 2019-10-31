@@ -9,7 +9,7 @@ import (
 	"github.com/streadway/amqp"
 )
 
-func sendMessage(connection *amqp.Connection) {
+func sendMessageDirect(connection *amqp.Connection) {
 	// Create a channel from the connection. We'll use channels to access the data in the queue rather than the
 	// connection itself
 	channel, err := connection.Channel()
@@ -21,7 +21,7 @@ func sendMessage(connection *amqp.Connection) {
 
 	// We create an exahange that will bind to the queue to send and receive messages
 	// see this for kind of type https://medium.com/faun/different-types-of-rabbitmq-exchanges-9fefd740505d
-	err = channel.ExchangeDeclare("events2", "topic", true, false, false, false, nil)
+	err = channel.ExchangeDeclare("direct-event", "direct", true, false, false, false, nil)
 
 	if err != nil {
 		panic(err)
@@ -45,7 +45,7 @@ func sendMessage(connection *amqp.Connection) {
 			}
 
 			// We publish the message to the exahange we created earlier
-			err = channel.Publish("events2", "random-key", false, false, message)
+			err = channel.Publish("direct-event", "direct-route", false, false, message)
 
 			if err != nil {
 				panic("error publishing a message to the queue:" + err.Error())
@@ -56,7 +56,7 @@ func sendMessage(connection *amqp.Connection) {
 
 }
 
-func receiveMessage(connection *amqp.Connection) {
+func receiveMessageDirect(connection *amqp.Connection) {
 	// Create a channel from the connection. We'll use channels to access the data in the queue rather than the
 	// connection itself
 	channel, err := connection.Channel()
@@ -68,13 +68,13 @@ func receiveMessage(connection *amqp.Connection) {
 
 	// We create an exahange that will bind to the queue to send and receive messages
 	// see this for kind of type https://medium.com/faun/different-types-of-rabbitmq-exchanges-9fefd740505d
-	err = channel.ExchangeDeclare("events2", "topic", true, false, false, false, nil)
+	err = channel.ExchangeDeclare("direct-event", "direct", true, false, false, false, nil)
 
 	if err != nil {
 		panic(err)
 	}
 	// We create a queue named Test
-	q, err := channel.QueueDeclare("test", true, false, false, false, nil)
+	q, err := channel.QueueDeclare("que-direct", true, false, false, false, nil)
 
 	if err != nil {
 		panic("error declaring the queue: " + err.Error())
@@ -82,7 +82,7 @@ func receiveMessage(connection *amqp.Connection) {
 
 	// We bind the queue to the exchange to send and receive data from the queue
 	//with any routing key #
-	err = channel.QueueBind(q.Name, "#", "events2", false, nil)
+	err = channel.QueueBind(q.Name, "direct-route", "direct-event", false, nil)
 
 	if err != nil {
 		panic("error binding to the queue: " + err.Error())
