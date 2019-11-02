@@ -36,7 +36,7 @@ func sendMessage(connection *amqp.Connection) {
 		select {
 		case <-ctx.Done():
 			loop = false
-		case <-time.After(time.Second):
+		case <-time.After(time.Millisecond * 200):
 			// We create a message to be sent to the queue.
 			// It has to be an instance of the aqmp publishing struct
 			log.Println("send Message ", fmt.Sprintf("Hello World %d", index))
@@ -56,7 +56,7 @@ func sendMessage(connection *amqp.Connection) {
 
 }
 
-func receiveMessage(connection *amqp.Connection) {
+func receiveMessage(wokerId int, connection *amqp.Connection) {
 	// Create a channel from the connection. We'll use channels to access the data in the queue rather than the
 	// connection itself
 	channel, err := connection.Channel()
@@ -88,6 +88,8 @@ func receiveMessage(connection *amqp.Connection) {
 		panic("error binding to the queue: " + err.Error())
 	}
 
+	//defer channel.QueueUnbind(q.Name, "#", "events2", nil)
+
 	// We consume data in the queue named test using the channel we created in go.
 	msgs, err := channel.Consume(q.Name, "", false, false, false, false, nil)
 
@@ -97,9 +99,10 @@ func receiveMessage(connection *amqp.Connection) {
 
 	// We loop through the messages in the queue and print them to the console.
 	// The msgs will be a go channel, not an amqp channel
+	log.Println("WORKER", wokerId, "LISTENING")
 	for msg := range msgs {
 		//print the message to the console
-		fmt.Println("message received: " + string(msg.Body))
+		log.Println("WORKER: ", wokerId, "message received: "+string(msg.Body))
 		// Acknowledge that we have received the message so it can be removed from the queue
 		msg.Ack(false)
 	}

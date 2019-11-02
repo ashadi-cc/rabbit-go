@@ -14,12 +14,12 @@ func main() {
 		log.Fatalf("failed to connect to RabbitMQ %s", err.Error())
 	}
 	defer conn.Close()
-	defer recoverAction(conn)
 	enterChoice(conn)
 
 }
 
 func enterChoice(conn *amqp.Connection) {
+	defer recoverAction(conn)
 	fmt.Println("Select RabbitMQ service:")
 	fmt.Println("1. Producer")
 	fmt.Println("2. Consumer")
@@ -37,7 +37,13 @@ func enterChoice(conn *amqp.Connection) {
 		sendMessage(conn)
 	case "2":
 		fmt.Println("Run Consumer")
-		receiveMessage(conn)
+		//run multiple consumer
+		go receiveMessage(1, conn)
+		go receiveMessage(2, conn)
+		go receiveMessage(3, conn)
+		go receiveMessage(4, conn)
+		forever := make(chan bool)
+		<-forever
 	case "3":
 		fmt.Println("Run direct producer")
 		sendMessageDirect(conn)
